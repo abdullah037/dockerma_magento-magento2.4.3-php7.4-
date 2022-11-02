@@ -1,0 +1,70 @@
+version: '3'
+services:
+    mysql:
+        container_name: mysql
+        build: ./magento2-2.4.3/dbd
+        restart: always
+        ports:
+          - "3306:3306"
+        environment:
+          - MYSQL_ROOT_PASSWORD=root
+          - MYSQL_DATABASE=magento
+        volumes:
+          - magento-db-data:/var/lib/mysql
+    web:
+        container_name: web
+        build: ./magento2-2.4.3
+        restart: always
+        user: application
+        environment:
+          - WEB_ALIAS_DOMAIN=commerce.com
+          - WEB_DOCUMENT_ROOT=/app/pub
+          - PHP_DATE_TIMEZONE=EST
+          - PHP_DISPLAY_ERRORS=1
+          - PHP_MEMORY_LIMIT=2048M
+          - PHP_MAX_EXECUTION_TIME=300
+          - PHP_POST_MAX_SIZE=500M
+          - PHP_UPLOAD_MAX_FILESIZE=1024M
+        ports:
+          - "80:80"
+          - "443:443"
+          - "32823:22"
+        links:
+          - mysql
+    
+    phpmyadmin:
+        container_name: phpmyadmin
+        restart: always
+        image: phpmyadmin/phpmyadmin:latest
+        environment:
+          - MYSQL_ROOT_PASSWORD=root
+          - PMA_USER=root
+          - PMA_PASSWORD=root
+        ports:
+          - "8080:80"
+        links:
+          - mysql:db
+        depends_on:
+          - mysql
+    elasticsearch:
+        container_name: elasticsearch
+        image: docker.elastic.co/elasticsearch/elasticsearch:7.8.1
+        environment:
+          - node.name=elasticsearch
+          - cluster.name=es-docker-cluster
+          - discovery.type=single-node
+          - bootstrap.memory_lock=true
+          - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+        ulimits:
+          memlock:
+            soft: -1
+            hard: -1
+        volumes:
+          - magento-es-data:/usr/share/elasticsearch/data
+        ports:
+          - 9200:9200
+volumes:
+    magento-db-data:
+        external: false
+    magento-es-data:
+        external: false

@@ -1,0 +1,49 @@
+version: '3'
+services:
+    mysql:
+        image: mariadb:10.2
+        container_name: mysql
+        restart: always
+        ports:
+          - "3306:3306"
+        environment:
+          - MYSQL_ROOT_PASSWORD=root
+          - MYSQL_DATABASE=magento
+        volumes:
+          - magento-db-data:/var/lib/mysql
+    phpmyadmin:
+        container_name: phpmyadmin
+        restart: always
+        image: phpmyadmin/phpmyadmin:latest
+        environment:
+          - MYSQL_ROOT_PASSWORD=root
+          - PMA_USER=root
+          - PMA_PASSWORD=root
+        ports:
+          - "8080:80"
+        links:
+          - mysql:db
+        depends_on:
+          - mysql
+    elasticsearch:
+        container_name: elasticsearch
+        image: docker.elastic.co/elasticsearch/elasticsearch:7.8.1
+        environment:
+          - node.name=elasticsearch
+          - cluster.name=es-docker-cluster
+          - discovery.type=single-node
+          - bootstrap.memory_lock=true
+          - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+        ulimits:
+          memlock:
+            soft: -1
+            hard: -1
+        volumes:
+          - magento-es-data:/usr/share/elasticsearch/data
+        ports:
+          - 9200:9200
+volumes:
+    magento-db-data:
+        external: false
+    magento-es-data:
+        external: false
